@@ -6,15 +6,11 @@ sleep 5
 sudo systemctl status vault
 
 
-VAULT=${VAULT}
-DOMAIN=${DOMAIN}
-
-
 echo $DOMAIN
 rm -fr /tmp/vault/data
 which unzip curl jq /sbin/route vim sshpass || {
-apt-get update -y
-apt-get install unzip jq net-tools vim curl sshpass -y 
+  apt-get update -y
+  apt-get install unzip jq net-tools vim curl sshpass -y 
 }
 
 mkdir -p /vagrant/pkg/
@@ -137,98 +133,36 @@ curl \
     http://127.0.0.1:8200/v1/sys/license
 
 
+declare -A vaultserver
+vaultserver["client-vault-server1-sofia"]="10.10.46.11"
+vaultserver["client-vault-server2-sofia"]="10.10.46.12"
+vaultserver["client-vault-server3-sofia"]="10.10.66.13"
+vaultserver["client-vault-server4-sofia"]="10.10.66.14"
 
-if [[ "${hostname}" =~ "server1" ]]; then
+declare -A vaultpath
+vaultpath["client-vault-server1-sofia"]="vault1/"
+vaultpath["client-vault-server2-sofia"]="vault1/"
+vaultpath["client-vault-server3-sofia"]="vault2/"
+vaultpath["client-vault-server4-sofia"]="vault2/"
+
 
 cat << EOF > /etc/vault.d/config.hcl
 
 listener "tcp" {
   address          = "0.0.0.0:8200"
-  cluster_address  = "10.10.46.11:8201"
+  cluster_address  = "${vaultserver[$hostname]}:8201"
   tls_disable      = "true"
 }
 
 storage "consul" {
   address = "127.0.0.1:8500"
-  path    = "vault1/"
+  path    = "${vaultpath[$hostname]}"
 }
 
-api_addr = "http://10.10.46.11:8200"
-cluster_addr = "https://10.10.46.11:8201"
+api_addr = "http://${vaultserver[$hostname]}:8200"
+cluster_addr = "https://${vaultserver[$hostname]}:8201"
 
 EOF
-    
-fi
-
-if [[ "${hostname}" =~ "server2" ]]; then
-
-cat << EOF > /etc/vault.d/config.hcl
-
-listener "tcp" {
-  address          = "0.0.0.0:8200"
-  cluster_address  = "10.10.46.12:8201"
-  tls_disable      = "true"
-}
-
-storage "consul" {
-  address = "127.0.0.1:8500"
-  path    = "vault1/"
-}
-
-api_addr = "http://10.10.46.12:8200"
-cluster_addr = "https://10.10.46.12:8201"
-
-EOF
-    
-fi
-
-if [[ "${hostname}" =~ "server3" ]]; then
-
-cat << EOF > /etc/vault.d/config.hcl
-
-listener "tcp" {
-  address          = "0.0.0.0:8200"
-  cluster_address  = "10.10.66.13:8201"
-  tls_disable      = "true"
-}
-
-storage "consul" {
-  address = "127.0.0.1:8500"
-  path    = "vault2/"
-}
-
-api_addr = "http://10.10.66.13:8200"
-cluster_addr = "https://10.10.66.13:8201"
-
-EOF
-    
-fi
-
-if [[ "${hostname}" =~ "server4" ]]; then
-
-cat << EOF > /etc/vault.d/config.hcl
-
-listener "tcp" {
-  address          = "0.0.0.0:8200"
-  cluster_address  = "10.10.66.14:8201"
-  tls_disable      = "true"
-}
-
-storage "consul" {
-  address = "127.0.0.1:8500"
-  path    = "vault2/"
-}
-
-api_addr = "http://10.10.66.14:8200"
-cluster_addr = "https://10.10.66.14:8201"
-
-EOF
-    
-fi
-
-
-
-
 
 if [[ "${hostname}" =~ "server1" ]]; then
 
